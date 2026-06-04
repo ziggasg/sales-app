@@ -13,6 +13,31 @@ const row = (label, val) => {
   return `<div class="flex justify-between gap-4"><span class="text-muted-foreground">${escapeHtml(label)}</span><span class="font-medium text-right">${escapeHtml(String(val))}</span></div>`;
 };
 
+const fmtEur = (v) => {
+  const n = parseFloat(v);
+  if (isNaN(n)) return escapeHtml(String(v));
+  return "€" + n.toLocaleString("en-CY", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
+
+const valuationCard = (p1, p2, p3) => {
+  const items = [
+    p1 != null ? { year: "2018", label: "Land Register", val: p1 } : null,
+    p2 != null ? { year: "2021", label: "Valuation",     val: p2 } : null,
+    p3 != null ? { year: "1980", label: "Valuation",     val: p3 } : null,
+  ].filter(Boolean);
+  if (!items.length) return "";
+  const cols = items.map(({ year, label, val }) =>
+    `<div style="flex:1;min-width:0;background:#f5f0ff;border-radius:10px;padding:8px 10px;text-align:center;">
+      <div style="font-size:10px;color:#9c8fba;margin-bottom:2px;">${escapeHtml(year)} ${escapeHtml(label)}</div>
+      <div style="font-size:14px;font-weight:700;color:#3d1f8a;">${fmtEur(val)}</div>
+    </div>`
+  ).join("");
+  return `<div style="margin-top:12px;margin-bottom:4px;">
+    <div style="font-size:10px;font-weight:600;color:#7c6fa0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Valuations</div>
+    <div style="display:flex;gap:6px;">${cols}</div>
+  </div>`;
+};
+
 function renderProp(p, isUnit, parent) {
   const typeName = pickName(p.PrPropertyType);
   const kindName = pickName(p.PrSubPropertyKind);
@@ -39,9 +64,7 @@ function renderProp(p, isUnit, parent) {
   rows.push(addNameRow("Municipality", "PrMunicipality", pickName(p.PrMunicipality)));
   rows.push(addRow("Location", "PrLocation", p.PrLocation));
   rows.push(addRow("Extents (m²)", "PrExtents", p.PrExtents));
-  rows.push(addRow("Land Register Valuation 2018", "PrPriceBase1", p.PrPriceBase1));
-  rows.push(addRow("2021 Valuation", "PrPriceBase2", p.PrPriceBase2));
-  rows.push(addRow("1980 Valuation", "PrPriceBase3", p.PrPriceBase3));
+  const valCard = valuationCard(p.PrPriceBase1, p.PrPriceBase2, p.PrPriceBase3);
   rows.push(row("Common Share", p.PrCommonShare));
 
   const zone = p.PrPlanningZone;
@@ -92,6 +115,7 @@ function renderProp(p, isUnit, parent) {
   return `<div class="${indent} mt-2 space-y-0.5">
     <div class="text-xs font-semibold ${isUnit ? "text-foreground/80" : "text-foreground"}">${isUnit ? "↳ Unit" : "Parcel"}${headerBits ? `: ${escapeHtml(headerBits)}` : ""}</div>
     ${rows.filter(Boolean).join("")}
+    ${valCard}
     ${zoneHtml}
     ${subsHtml}
   </div>`;
