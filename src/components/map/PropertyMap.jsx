@@ -1,34 +1,73 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip as ReTooltip, Legend, ResponsiveContainer,
 } from "recharts";
 import { getPropertyData } from "@/functions/getPropertyData";
-import { flagIcon, offPlanIcon, mercatorToLatLng, getLatLngCentroid, ringToLatLng } from "./MapHelpers";
+import { flagIcon, offPlanIcon, ringToLatLng } from "./MapHelpers";
 import { buildDetailsHtml } from "./ParcelDetailsBuilder";
 import ParcelSearch from "./ParcelSearch";
-import { Layers, BarChart3, X, Loader2 } from "lucide-react";
+import { BarChart3, X, ChevronDown, Loader2 } from "lucide-react";
 
-// Cadastral parcel layer
-function ParcelLayer({ fetchDetails }) {
+// ── Bottom Sheet ─────────────────────────────────────────────────────────────
+function BottomSheet({ title, accentColor, children, onClose }) {
+  return (
+    <div style={{
+      position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 2000,
+      background: "#fff", borderRadius: "20px 20px 0 0",
+      boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
+      maxHeight: "60vh", display: "flex", flexDirection: "column",
+      fontFamily: "Roboto, sans-serif",
+    }}>
+      {/* Handle bar */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: "#e0d8f0" }} />
+      </div>
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "4px 20px 12px",
+        borderBottom: `3px solid ${accentColor}`,
+        flexShrink: 0,
+      }}>
+        <span style={{ fontWeight: 700, fontSize: 16, color: "#1a1625" }}>{title}</span>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+          <X style={{ width: 20, height: 20, color: "#7c6fa0" }} />
+        </button>
+      </div>
+      {/* Scrollable body */}
+      <div style={{ overflowY: "auto", padding: "16px 20px 32px", flex: 1 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+      padding: "10px 0", borderBottom: "1px solid #f0ebff", gap: 12,
+    }}>
+      <span style={{ color: "#7c6fa0", fontSize: 13, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontWeight: 500, fontSize: 13, color: "#1a1625", textAlign: "right" }}>{value}</span>
+    </div>
+  );
+}
+
+// ── Cadastral parcel layer — fires onParcelClick instead of Leaflet popup ────
+function ParcelLayer({ onParcelClick }) {
   const map = useMap();
   useEffect(() => {
-    const detailsCache = new Map();
-    const inflight = new Map();
-    const escapeHtml = (s) =>
-      s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-    const formatLabel = (key) =>
-      key.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-
     const layer = L.layerGroup().addTo(map);
     let cancelled = false;
     const defaultStyle = { color: "#6750a4", weight: 1, fill: true, fillColor: "#6750a4", fillOpacity: 0.08 };
     const selectedStyle = { color: "#facc15", weight: 3, fill: true, fillColor: "#facc15", fillOpacity: 0.25 };
     let selected = null;
     const clearSelection = () => {
-      if (selected) { selected.forEach((p) => p.setStyle(defaultStyle)); selected = null; }
+      if (selected) { selected.setStyle(defaultStyle); selected = null; }
     };
 
     const load = async () => {
@@ -49,66 +88,13 @@ function ParcelLayer({ fetchDetails }) {
           const latlngs = ringToLatLng(f.geometry);
           if (!latlngs) return;
           const poly = L.polygon(latlngs, defaultStyle);
-          const a = f.attributes;
-          const sbpiId = a.SBPI_ID_NO;
-          const label = `D${a.DIST_CODE} V${a.VIL_CODE} Q${a.QRTR_CODE} B${a.BLCK_CODE} P${a.PARCEL_NBR}`;
-
-          const rows = Object.entries(a)
-            .filter(([k]) => !["OBJECTID", "Shape", "Shape_Length", "Shape_Area", "FID"].includes(k))
-            .map(([k, v]) => {
-              let val = v;
-              if (typeof val === "number" && val > 1e12) try { val = new Date(val).toLocaleDateString("en-GB"); } catch {}
-              return `<div class="flex justify-between gap-4"><span class="text-muted-foreground">${escapeHtml(formatLabel(k))}</span><span class="font-medium text-right">${val == null ? "—" : escapeHtml(String(val))}</span></div>`;
-            }).join("");
-
-          const detailsPlaceholder = sbpiId
-            ? `<div id="sbpi-${sbpiId}" class="mt-2"><button class="sbpi-load text-[10px] text-blue-400 underline cursor-pointer" data-sbpi="${sbpiId}">Load property details…</button></div>`
-            : "";
-
-          poly.bindPopup(
-            `<div class="text-xs space-y-0.5" style="width:100%;max-width:300px"><div class="font-semibold text-sm mb-1">${escapeHtml(label)}</div>${rows}${detailsPlaceholder}</div>`,
-            { maxWidth: Math.min(320, window.innerWidth - 40), maxHeight: 400 }
-          );
-
           poly.on("click", (e) => {
             L.DomEvent.stopPropagation(e);
             clearSelection();
             poly.setStyle(selectedStyle);
-            selected = [poly];
+            selected = poly;
+            onParcelClick(f.attributes);
           });
-
-          poly.on("popupopen", () => {
-            if (!sbpiId) return;
-            const container = document.getElementById(`sbpi-${sbpiId}`);
-            if (!container) return;
-            const btn = container.querySelector(".sbpi-load");
-            if (!btn) return;
-            btn.addEventListener("click", async () => {
-              btn.textContent = "Loading…";
-              btn.style.pointerEvents = "none";
-              try {
-                let html;
-                if (detailsCache.has(String(sbpiId))) {
-                  html = detailsCache.get(String(sbpiId));
-                } else if (inflight.has(String(sbpiId))) {
-                  html = await inflight.get(String(sbpiId));
-                } else {
-                  const p = fetchDetails(sbpiId).then((r) => {
-                    const h = buildDetailsHtml(r);
-                    detailsCache.set(String(sbpiId), h);
-                    return h;
-                  });
-                  inflight.set(String(sbpiId), p);
-                  html = await p;
-                  inflight.delete(String(sbpiId));
-                }
-                container.innerHTML = html || '<div class="text-muted-foreground italic">No extra details</div>';
-              } catch {
-                container.innerHTML = '<div class="text-red-400 italic">Failed to load details</div>';
-              }
-            });
-          });
-
           layer.addLayer(poly);
         });
       } catch { /* ignore */ }
@@ -117,53 +103,82 @@ function ParcelLayer({ fetchDetails }) {
     load();
     map.on("moveend", load);
     return () => { cancelled = true; map.off("moveend", load); layer.remove(); };
-  }, [map, fetchDetails]);
+  }, [map, onParcelClick]);
   return null;
 }
 
-// Legend overlay — MD3 surface card with toggleable layers
+// Dismiss sheet on map tap
+function MapTapDismiss({ onTap }) {
+  useMapEvents({ click: onTap });
+  return null;
+}
+
+// ── Legend ───────────────────────────────────────────────────────────────────
 function MapLegend({ showProperties, showTransactions, onToggleProperties, onToggleTransactions }) {
   return (
     <div style={{
-      position: "absolute", bottom: 24, left: 12, zIndex: 1000,
+      position: "absolute", bottom: 24, right: 12, zIndex: 1000,
       background: "#fff", borderRadius: 14,
       boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
       padding: "10px 14px",
-      fontFamily: "Roboto, sans-serif",
-      fontSize: 12,
+      fontFamily: "Roboto, sans-serif", fontSize: 12,
     }}>
-      <div style={{ fontWeight: 600, color: "#1a1625", marginBottom: 8, fontSize: 13 }}>Legend</div>
+      <div style={{ fontWeight: 600, color: "#1a1625", marginBottom: 8, fontSize: 13 }}>Layers</div>
       {[
         { color: "#ef4444", label: "Property Sale", active: showProperties, onToggle: onToggleProperties },
-        { color: "#22c55e", label: "Off-plan Transaction", active: showTransactions, onToggle: onToggleTransactions },
+        { color: "#22c55e", label: "Off-plan", active: showTransactions, onToggle: onToggleTransactions },
       ].map(({ color, label, active, onToggle }) => (
         <button key={label} onClick={onToggle} style={{
           display: "flex", alignItems: "center", gap: 8, marginBottom: 6,
           background: "none", border: "none", cursor: "pointer", padding: 0, width: "100%",
           opacity: active ? 1 : 0.4, transition: "opacity 0.2s",
         }}>
-          <span style={{ width: 12, height: 12, borderRadius: "50%", background: color, border: "2px solid #fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", display: "inline-block", flexShrink: 0 }} />
-          <span style={{ color: "#5c4b8a", textDecoration: active ? "none" : "line-through", fontSize: 12 }}>{label}</span>
+          <span style={{ width: 12, height: 12, borderRadius: "50%", background: color, flexShrink: 0 }} />
+          <span style={{ color: "#5c4b8a", textDecoration: active ? "none" : "line-through", fontSize: 12, whiteSpace: "nowrap" }}>{label}</span>
         </button>
       ))}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(103,80,164,0.15)", border: "1.5px solid #6750a4", display: "inline-block", flexShrink: 0 }} />
-        <span style={{ color: "#5c4b8a" }}>Cadastral Parcel</span>
+        <span style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(103,80,164,0.15)", border: "1.5px solid #6750a4", flexShrink: 0 }} />
+        <span style={{ color: "#5c4b8a", whiteSpace: "nowrap" }}>Cadastral</span>
       </div>
     </div>
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
 export default function PropertyMap({ properties, transactions }) {
   const mapRef = useRef(null);
   const [showChart, setShowChart] = useState(false);
   const [showProperties, setShowProperties] = useState(true);
   const [showTransactions, setShowTransactions] = useState(false);
 
-  const fetchDetails = async (sbpiId) => {
-    const res = await getPropertyData({ action: "parcelDetails", sbpiId });
-    return res.data?.raw || "";
-  };
+  // Bottom sheet state
+  const [sheet, setSheet] = useState(null); // { type: 'parcel'|'property'|'transaction', data }
+  const [parcelDetails, setParcelDetails] = useState(null); // { loading, html }
+  const detailsCacheRef = useRef(new Map());
+
+  const closeSheet = useCallback(() => { setSheet(null); setParcelDetails(null); }, []);
+
+  const handleParcelClick = useCallback((attrs) => {
+    setSheet({ type: "parcel", data: attrs });
+    setParcelDetails(null);
+    const sbpiId = attrs.SBPI_ID_NO;
+    if (!sbpiId) return;
+    if (detailsCacheRef.current.has(String(sbpiId))) {
+      setParcelDetails({ loading: false, html: detailsCacheRef.current.get(String(sbpiId)) });
+      return;
+    }
+    setParcelDetails({ loading: true, html: null });
+    getPropertyData({ action: "parcelDetails", sbpiId })
+      .then((res) => {
+        const html = buildDetailsHtml(res.data?.raw || "");
+        detailsCacheRef.current.set(String(sbpiId), html);
+        setParcelDetails({ loading: false, html });
+      })
+      .catch(() => setParcelDetails({ loading: false, html: null }));
+  }, []);
+
+  const DIST = { 1: "Nicosia", 2: "Limassol", 3: "Larnaca", 4: "Famagusta", 5: "Paphos", 6: "Kyrenia" };
 
   // Chart data
   const chartData = useMemo(() => {
@@ -180,88 +195,39 @@ export default function PropertyMap({ properties, transactions }) {
       .map((m) => ({ ...m, avgPrice: m.sales ? Math.round(m.totalPrice / m.sales) : 0 }));
   }, [properties]);
 
-  // Popup builder for property markers
-  const buildPropertyPopup = (p) => {
-    const type = p.fiscal_property_type || "Unknown";
-    const price = parseFloat(p.declared_price);
-    const priceStr = !isNaN(price) ? `€${price.toLocaleString()}` : "N/A";
-    const date = p.sale_acceptance_date || "N/A";
-    const area = p.town_village_name || "Unknown";
-    const block = p.block || "—";
-    const reg = p.reg_no || "—";
-    const mainCat = p.main_sbp_cat || "—";
-    const mainKind = p.main_sbp_kind || "—";
-    const enclosed = p.enclosed_ext || "—";
-    const covered = p.covered_ext || "—";
-    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #ede8f5;flex-wrap:wrap"><span style="color:#7c6fa0;white-space:nowrap">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625;word-break:break-word">${val}</span></div>`;
-    return `<div style="font-size:13px;line-height:1.6;width:100%;font-family:Roboto,sans-serif">
-      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #ef4444;color:#1a1625">${type}</div>
-      ${row("Price", `<span style="color:#16a34a;font-size:15px;font-weight:700">${priceStr}</span>`)}
-      ${row("Sale Date", date)}
-      ${row("Area / Village", area)}
-      ${row("Block / Reg No", `${block} / ${reg}`)}
-      ${row("Category", mainCat)}
-      ${row("Kind", mainKind)}
-      ${row("Enclosed Area", enclosed !== "—" ? `${enclosed} m²` : "—")}
-      ${row("Covered Area", covered !== "—" ? `${covered} m²` : "—")}
-    </div>`;
-  };
-
-  const buildTxPopup = (t) => {
-    const amount = parseFloat(t.cos_amount);
-    const amountStr = !isNaN(amount) ? `€${amount.toLocaleString()}` : "N/A";
-    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #ede8f5;flex-wrap:wrap"><span style="color:#7c6fa0;white-space:nowrap">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625;word-break:break-word">${val}</span></div>`;
-    return `<div style="font-size:13px;line-height:1.6;width:100%;font-family:Roboto,sans-serif">
-      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #22c55e;color:#1a1625">Off-plan Transaction</div>
-      ${row("Amount", `<span style="color:#16a34a;font-size:15px;font-weight:700">${amountStr}</span>`)}
-      ${row("Agreement Date", t.cos_agreement_date || "N/A")}
-      ${row("Area / Village", t.town_village_name || "—")}
-      ${row("Block / Reg No", `${t.block || "—"} / ${t.reg_no || "—"}`)}
-      ${row("Share", `${t.share_numerator || "—"} / ${t.share_denominator || "—"}`)}
-      ${t.remark1 ? `<div style="margin-top:8px;font-style:italic;color:#7c6fa0">${t.remark1}</div>` : ""}
-    </div>`;
-  };
-
   return (
-    <div className="relative h-screen w-screen">
+    <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
       <MapContainer
         center={[34.775, 32.424]}
         zoom={14}
-        className="h-full w-full"
+        style={{ width: "100%", height: "100%" }}
         ref={mapRef}
-        zoomControl={true}
+        zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <ParcelLayer fetchDetails={fetchDetails} />
+        <ParcelLayer onParcelClick={handleParcelClick} />
+        <MapTapDismiss onTap={closeSheet} />
 
-        {/* Property markers */}
         {showProperties && properties.map((p, i) => {
-          const lat = parseFloat(p.center_y);
-          const lng = parseFloat(p.center_x);
+          const lat = parseFloat(p.center_y), lng = parseFloat(p.center_x);
           if (isNaN(lat) || isNaN(lng)) return null;
           return (
-            <Marker key={`p-${i}`} position={[lat, lng]} icon={flagIcon}>
-              <Popup maxWidth={Math.min(360, window.innerWidth - 40)} minWidth={Math.min(280, window.innerWidth - 60)}>
-                <div dangerouslySetInnerHTML={{ __html: buildPropertyPopup(p) }} />
-              </Popup>
-            </Marker>
+            <Marker key={`p-${i}`} position={[lat, lng]} icon={flagIcon}
+              eventHandlers={{ click: () => setSheet({ type: "property", data: p }) }}
+            />
           );
         })}
 
-        {/* Transaction markers */}
         {showTransactions && transactions.map((t, i) => {
-          const lat = parseFloat(t.center_y);
-          const lng = parseFloat(t.center_x);
+          const lat = parseFloat(t.center_y), lng = parseFloat(t.center_x);
           if (isNaN(lat) || isNaN(lng)) return null;
           return (
-            <Marker key={`t-${i}`} position={[lat, lng]} icon={offPlanIcon}>
-              <Popup maxWidth={Math.min(360, window.innerWidth - 40)} minWidth={Math.min(280, window.innerWidth - 60)}>
-                <div dangerouslySetInnerHTML={{ __html: buildTxPopup(t) }} />
-              </Popup>
-            </Marker>
+            <Marker key={`t-${i}`} position={[lat, lng]} icon={offPlanIcon}
+              eventHandlers={{ click: () => setSheet({ type: "transaction", data: t }) }}
+            />
           );
         })}
       </MapContainer>
@@ -277,47 +243,43 @@ export default function PropertyMap({ properties, transactions }) {
         onToggleTransactions={() => setShowTransactions(v => !v)}
       />
 
-      {/* Chart toggle — MD3 FAB */}
+      {/* Chart FAB */}
       <button
         onClick={() => setShowChart(!showChart)}
         title="Price Trends"
         style={{
           position: "absolute", top: 12, right: 12, zIndex: 1000,
           background: "#6750a4", color: "#fff",
-          border: "none", borderRadius: 16,
-          width: 44, height: 44,
+          border: "none", borderRadius: 16, width: 44, height: 44,
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 2px 8px rgba(103,80,164,0.4)",
-          cursor: "pointer", transition: "box-shadow 0.2s",
+          boxShadow: "0 2px 8px rgba(103,80,164,0.4)", cursor: "pointer",
         }}
       >
         <BarChart3 style={{ width: 20, height: 20 }} />
       </button>
 
-      {/* Chart panel — MD3 surface card */}
+      {/* Chart panel */}
       {showChart && (
         <div style={{
-          position: "absolute", top: 64, right: 12, zIndex: 1000,
-          width: 380, background: "#fff",
-          borderRadius: 20,
+          position: "absolute", top: 64, right: 12, left: 12, zIndex: 1000,
+          background: "#fff", borderRadius: 20,
           boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
           padding: 16, fontFamily: "Roboto, sans-serif",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Average Sale Price</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Avg Sale Price</h3>
             <button onClick={() => setShowChart(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7c6fa0" }}>
               <X style={{ width: 16, height: 16 }} />
             </button>
           </div>
-          <div style={{ height: 200 }}>
+          <div style={{ height: 180 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ede8f5" />
                 <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#9c8fba" }} />
                 <YAxis tick={{ fontSize: 9, fill: "#9c8fba" }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
                 <ReTooltip
-                  contentStyle={{ background: "#fff", border: "1px solid #ede8f5", borderRadius: 12, fontSize: 11, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-                  labelStyle={{ color: "#1a1625", fontWeight: 600 }}
+                  contentStyle={{ background: "#fff", border: "1px solid #ede8f5", borderRadius: 12, fontSize: 11 }}
                   formatter={(v) => [`€${v.toLocaleString()}`, "Avg Price"]}
                 />
                 <Legend wrapperStyle={{ fontSize: 10, color: "#7c6fa0" }} />
@@ -328,6 +290,79 @@ export default function PropertyMap({ properties, transactions }) {
           </div>
         </div>
       )}
+
+      {/* ── Bottom Sheets ── */}
+
+      {/* Parcel */}
+      {sheet?.type === "parcel" && (
+        <BottomSheet
+          title={`Block ${sheet.data.BLCK_CODE} · Parcel ${sheet.data.PARCEL_NBR}`}
+          accentColor="#6750a4"
+          onClose={closeSheet}
+        >
+          <InfoRow label="District" value={DIST[sheet.data.DIST_CODE] || sheet.data.DIST_CODE} />
+          <InfoRow label="Village Code" value={sheet.data.VIL_CODE} />
+          <InfoRow label="Quarter" value={sheet.data.QRTR_CODE} />
+          <InfoRow label="Block" value={sheet.data.BLCK_CODE} />
+          <InfoRow label="Parcel No" value={sheet.data.PARCEL_NBR} />
+          <InfoRow label="Sheet" value={sheet.data.SHEET || "—"} />
+          <InfoRow label="Plan No" value={sheet.data.PLAN_NBR || "—"} />
+          <InfoRow label="SBPI ID" value={sheet.data.SBPI_ID_NO || "—"} />
+          {sheet.data["SHAPE.STArea()"] && (
+            <InfoRow label="Area (m²)" value={Number(sheet.data["SHAPE.STArea()"]).toFixed(1)} />
+          )}
+          {/* Property details */}
+          {sheet.data.SBPI_ID_NO && (
+            <div style={{ marginTop: 16 }}>
+              {parcelDetails?.loading && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#7c6fa0", fontSize: 13 }}>
+                  <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> Loading property details…
+                </div>
+              )}
+              {parcelDetails && !parcelDetails.loading && parcelDetails.html && (
+                <div dangerouslySetInnerHTML={{ __html: parcelDetails.html }} />
+              )}
+              {parcelDetails && !parcelDetails.loading && !parcelDetails.html && (
+                <p style={{ color: "#9c8fba", fontSize: 13, fontStyle: "italic" }}>No additional property details.</p>
+              )}
+            </div>
+          )}
+        </BottomSheet>
+      )}
+
+      {/* Property Sale */}
+      {sheet?.type === "property" && (() => {
+        const p = sheet.data;
+        const price = parseFloat(p.declared_price);
+        return (
+          <BottomSheet title={p.fiscal_property_type || "Property Sale"} accentColor="#ef4444" onClose={closeSheet}>
+            <InfoRow label="Price" value={!isNaN(price) ? `€${price.toLocaleString()}` : "N/A"} />
+            <InfoRow label="Sale Date" value={p.sale_acceptance_date || "N/A"} />
+            <InfoRow label="Area / Village" value={p.town_village_name || "—"} />
+            <InfoRow label="Block / Reg No" value={`${p.block || "—"} / ${p.reg_no || "—"}`} />
+            <InfoRow label="Category" value={p.main_sbp_cat || "—"} />
+            <InfoRow label="Kind" value={p.main_sbp_kind || "—"} />
+            {p.enclosed_ext && <InfoRow label="Enclosed Area" value={`${p.enclosed_ext} m²`} />}
+            {p.covered_ext && <InfoRow label="Covered Area" value={`${p.covered_ext} m²`} />}
+          </BottomSheet>
+        );
+      })()}
+
+      {/* Off-plan Transaction */}
+      {sheet?.type === "transaction" && (() => {
+        const t = sheet.data;
+        const amount = parseFloat(t.cos_amount);
+        return (
+          <BottomSheet title="Off-plan Transaction" accentColor="#22c55e" onClose={closeSheet}>
+            <InfoRow label="Amount" value={!isNaN(amount) ? `€${amount.toLocaleString()}` : "N/A"} />
+            <InfoRow label="Agreement Date" value={t.cos_agreement_date || "N/A"} />
+            <InfoRow label="Area / Village" value={t.town_village_name || "—"} />
+            <InfoRow label="Block / Reg No" value={`${t.block || "—"} / ${t.reg_no || "—"}`} />
+            <InfoRow label="Share" value={`${t.share_numerator || "—"} / ${t.share_denominator || "—"}`} />
+            {t.remark1 && <p style={{ marginTop: 12, fontStyle: "italic", color: "#7c6fa0", fontSize: 13 }}>{t.remark1}</p>}
+          </BottomSheet>
+        );
+      })()}
     </div>
   );
 }
