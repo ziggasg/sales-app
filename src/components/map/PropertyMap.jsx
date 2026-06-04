@@ -9,7 +9,7 @@ import { getPropertyData } from "@/functions/getPropertyData";
 import { flagIcon, offPlanIcon, ringToLatLng } from "./MapHelpers";
 import { buildDetailsHtml } from "./ParcelDetailsBuilder";
 import ParcelSearch from "./ParcelSearch";
-import NearbyAmenities from "./NearbyAmenities";
+import NearbyAmenities from "./NearbyAmenities.jsx";
 import { BarChart3, X, Loader2, MapPin } from "lucide-react";
 
 // ── Bottom Sheet ─────────────────────────────────────────────────────────────
