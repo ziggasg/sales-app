@@ -158,7 +158,7 @@ export default function PropertyMap({ properties, transactions }) {
   const mapRef = useRef(null);
   const [showChart, setShowChart] = useState(false);
   const [showProperties, setShowProperties] = useState(true);
-  const [showTransactions, setShowTransactions] = useState(true);
+  const [showTransactions, setShowTransactions] = useState(false);
 
   const fetchDetails = async (sbpiId) => {
     const res = await getPropertyData({ action: "parcelDetails", sbpiId });
@@ -225,8 +225,8 @@ export default function PropertyMap({ properties, transactions }) {
   return (
     <div className="relative h-screen w-screen">
       <MapContainer
-        center={[35.0, 33.4]}
-        zoom={9}
+        center={[34.775, 32.424]}
+        zoom={14}
         className="h-full w-full"
         ref={mapRef}
         zoomControl={true}
