@@ -216,7 +216,10 @@ export default function PropertyMap({ properties, transactions }) {
         if (isNaN(lat) || isNaN(lng)) return;
         if (!mapBounds.contains([lat, lng])) return;
       }
-      const month = p.sale_acceptance_date.substring(0, 7);
+      const d = p.sale_acceptance_date;
+      const year = d.substring(0, 4);
+      const q = Math.ceil(parseInt(d.substring(5, 7)) / 3);
+      const month = `${year} Q${q}`;
       const type = p.fiscal_property_type || p.main_sbp_cat || "Other";
       if (!ALLOWED_TYPES.has(type)) return;
       typesSet.add(type);
@@ -337,7 +340,7 @@ export default function PropertyMap({ properties, transactions }) {
           padding: 16, fontFamily: "Roboto, sans-serif",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Median Sale Price per m²</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Quarterly Median Sale Price per m²</h3>
             <button onClick={() => setShowChart(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7c6fa0" }}>
               <X style={{ width: 16, height: 16 }} />
             </button>
