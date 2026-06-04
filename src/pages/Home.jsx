@@ -41,14 +41,33 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <p className="text-destructive text-sm">{error}</p>
+      <div style={{
+        position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "linear-gradient(135deg, #f5f0ff 0%, #ede8f5 100%)",
+        fontFamily: "Roboto, sans-serif", padding: 24,
+      }}>
+        <div style={{
+          background: "#fff", borderRadius: 24, padding: "40px 32px",
+          boxShadow: "0 8px 32px rgba(103,80,164,0.12)",
+          maxWidth: 360, width: "100%", textAlign: "center",
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔧</div>
+          <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "#1a1625" }}>
+            Under Maintenance
+          </h2>
+          <p style={{ margin: "0 0 24px", fontSize: 14, color: "#7c6fa0", lineHeight: 1.6 }}>
+            The property data service is temporarily unavailable. Our team is working to restore it. Please check back shortly.
+          </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+            style={{
+              background: "#6750a4", color: "#fff", border: "none",
+              borderRadius: 24, padding: "12px 32px",
+              fontSize: 14, fontWeight: 500, cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(103,80,164,0.3)",
+            }}
           >
-            Try again
+            Try Again
           </button>
         </div>
       </div>
