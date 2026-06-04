@@ -189,19 +189,36 @@ export default function PropertyMap({ properties, transactions }) {
   // DLS cadastral district codes (matches ArcGIS CadastralMap_EN layer)
   const DIST = { 1: "Nicosia", 2: "Kyrenia", 3: "Famagusta", 4: "Larnaca", 5: "Limassol", 6: "Paphos" };
 
-  // Chart data
-  const chartData = useMemo(() => {
+  // Chart data — from 2026-01-01, one avg price line per parcel type
+  const { chartData, chartTypes } = useMemo(() => {
     const byMonth = {};
+    const typesSet = new Set();
+
     properties.forEach((p) => {
       if (!p.sale_acceptance_date) return;
-      const d = p.sale_acceptance_date.substring(0, 7);
-      if (!byMonth[d]) byMonth[d] = { month: d, sales: 0, totalPrice: 0 };
-      byMonth[d].sales++;
-      byMonth[d].totalPrice += parseFloat(p.declared_price) || 0;
+      if (p.sale_acceptance_date < "2026-01-01") return;
+      const month = p.sale_acceptance_date.substring(0, 7);
+      const type = p.fiscal_property_type || p.main_sbp_cat || "Other";
+      typesSet.add(type);
+      if (!byMonth[month]) byMonth[month] = { month };
+      if (!byMonth[month][`${type}_total`]) { byMonth[month][`${type}_total`] = 0; byMonth[month][`${type}_count`] = 0; }
+      byMonth[month][`${type}_total`] += parseFloat(p.declared_price) || 0;
+      byMonth[month][`${type}_count`]++;
     });
-    return Object.values(byMonth)
+
+    const types = Array.from(typesSet).sort();
+    const data = Object.values(byMonth)
       .sort((a, b) => a.month.localeCompare(b.month))
-      .map((m) => ({ ...m, avgPrice: m.sales ? Math.round(m.totalPrice / m.sales) : 0 }));
+      .map((m) => {
+        const row = { month: m.month };
+        types.forEach((t) => {
+          const count = m[`${t}_count`] || 0;
+          row[t] = count ? Math.round(m[`${t}_total`] / count) : null;
+        });
+        return row;
+      });
+
+    return { chartData: data, chartTypes: types };
   }, [properties]);
 
   return (
@@ -281,7 +298,7 @@ export default function PropertyMap({ properties, transactions }) {
               <X style={{ width: 16, height: 16 }} />
             </button>
           </div>
-          <div style={{ height: 180 }}>
+          <div style={{ height: 220 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ede8f5" />
@@ -289,11 +306,24 @@ export default function PropertyMap({ properties, transactions }) {
                 <YAxis tick={{ fontSize: 9, fill: "#9c8fba" }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
                 <ReTooltip
                   contentStyle={{ background: "#fff", border: "1px solid #ede8f5", borderRadius: 12, fontSize: 11 }}
-                  formatter={(v) => [`€${v.toLocaleString()}`, "Avg Price"]}
+                  formatter={(v, name) => v != null ? [`€${v.toLocaleString()}`, name] : [null, name]}
                 />
-                <Legend wrapperStyle={{ fontSize: 10, color: "#7c6fa0" }} />
-                <Line type="monotone" dataKey="avgPrice" name="Avg Price" stroke="#6750a4" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="sales" name="Sales Count" stroke="#ef4444" strokeWidth={1.5} dot={false} />
+                <Legend wrapperStyle={{ fontSize: 9, color: "#7c6fa0" }} />
+                {chartTypes.map((type, i) => {
+                  const colors = ["#6750a4","#ef4444","#22c55e","#f59e0b","#3b82f6","#ec4899","#14b8a6","#f97316"];
+                  return (
+                    <Line
+                      key={type}
+                      type="monotone"
+                      dataKey={type}
+                      name={type}
+                      stroke={colors[i % colors.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls={false}
+                    />
+                  );
+                })}
               </LineChart>
             </ResponsiveContainer>
           </div>
