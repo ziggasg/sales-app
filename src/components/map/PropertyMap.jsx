@@ -223,7 +223,24 @@ export default function PropertyMap({ properties, transactions }) {
       if (!byMonth[month]) byMonth[month] = { month };
       if (!byMonth[month][`${type}_prices`]) byMonth[month][`${type}_prices`] = [];
       const price = parseFloat(p.declared_price);
-      if (!isNaN(price) && price > 0) byMonth[month][`${type}_prices`].push(price);
+      if (isNaN(price) || price <= 0) return;
+
+      // Area calculation: for apartments sum enclosed + covered, else use enclosed or covered
+      let area = null;
+      const enclosed = parseFloat(p.enclosed_ext);
+      const covered = parseFloat(p.covered_ext);
+      if (type === "ΔΙΑΜΕΡΙΣΜΑ") {
+        const e = isNaN(enclosed) ? 0 : enclosed;
+        const c = isNaN(covered) ? 0 : covered;
+        area = e + c > 0 ? e + c : null;
+      } else {
+        area = !isNaN(enclosed) && enclosed > 0 ? enclosed
+             : !isNaN(covered) && covered > 0 ? covered
+             : null;
+      }
+      if (!area) return;
+
+      byMonth[month][`${type}_prices`].push(price / area);
     });
 
     const median = (arr) => {
@@ -320,7 +337,7 @@ export default function PropertyMap({ properties, transactions }) {
           padding: 16, fontFamily: "Roboto, sans-serif",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Median Sale Price</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Median Sale Price per m²</h3>
             <button onClick={() => setShowChart(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7c6fa0" }}>
               <X style={{ width: 16, height: 16 }} />
             </button>
@@ -330,10 +347,10 @@ export default function PropertyMap({ properties, transactions }) {
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ede8f5" />
                 <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#9c8fba" }} />
-                <YAxis tick={{ fontSize: 9, fill: "#9c8fba" }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 9, fill: "#9c8fba" }} tickFormatter={(v) => `€${Math.round(v).toLocaleString()}`} />
                 <ReTooltip
                   contentStyle={{ background: "#fff", border: "1px solid #ede8f5", borderRadius: 12, fontSize: 11 }}
-                  formatter={(v, name) => v != null ? [`€${v.toLocaleString()}`, name] : [null, name]}
+                  formatter={(v, name) => v != null ? [`€${Math.round(v).toLocaleString()}/m²`, name] : [null, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: 9, color: "#7c6fa0" }} />
                 {chartTypes.map((type, i) => {
