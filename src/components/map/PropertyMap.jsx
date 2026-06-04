@@ -9,7 +9,8 @@ import { getPropertyData } from "@/functions/getPropertyData";
 import { flagIcon, offPlanIcon, ringToLatLng } from "./MapHelpers";
 import { buildDetailsHtml } from "./ParcelDetailsBuilder";
 import ParcelSearch from "./ParcelSearch";
-import { BarChart3, X, ChevronDown, Loader2 } from "lucide-react";
+import NearbyAmenities from "./NearbyAmenities";
+import { BarChart3, X, Loader2 } from "lucide-react";
 
 // ── Bottom Sheet ─────────────────────────────────────────────────────────────
 function BottomSheet({ title, accentColor, children, onClose }) {
@@ -93,7 +94,7 @@ function ParcelLayer({ onParcelClick }) {
             clearSelection();
             poly.setStyle(selectedStyle);
             selected = poly;
-            onParcelClick(f.attributes);
+            onParcelClick(f.attributes, f.geometry);
           });
           layer.addLayer(poly);
         });
@@ -159,8 +160,17 @@ export default function PropertyMap({ properties, transactions }) {
 
   const closeSheet = useCallback(() => { setSheet(null); setParcelDetails(null); }, []);
 
-  const handleParcelClick = useCallback((attrs) => {
-    setSheet({ type: "parcel", data: attrs });
+  const handleParcelClick = useCallback((attrs, geometry) => {
+    let centroid = null;
+    const rings = geometry?.rings || geometry?.coordinates;
+    if (rings?.[0]?.length) {
+      const pts = rings[0];
+      centroid = [
+        pts.reduce((s, p) => s + p[1], 0) / pts.length,
+        pts.reduce((s, p) => s + p[0], 0) / pts.length,
+      ];
+    }
+    setSheet({ type: "parcel", data: attrs, centroid });
     setParcelDetails(null);
     const sbpiId = attrs.SBPI_ID_NO;
     if (!sbpiId) return;
@@ -326,6 +336,9 @@ export default function PropertyMap({ properties, transactions }) {
                 <p style={{ color: "#9c8fba", fontSize: 13, fontStyle: "italic" }}>No additional property details.</p>
               )}
             </div>
+          )}
+          {sheet?.centroid && (
+            <NearbyAmenities lat={sheet.centroid[0]} lon={sheet.centroid[1]} />
           )}
         </BottomSheet>
       )}
