@@ -179,30 +179,32 @@ export default function PropertyMap({ properties, transactions }) {
     const mainKind = p.main_sbp_kind || "—";
     const enclosed = p.enclosed_ext || "—";
     const covered = p.covered_ext || "—";
-    return `<div class="text-xs space-y-1" style="min-width:200px">
-      <div class="font-semibold text-sm">${type}</div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Price</span><span class="font-medium text-green-400">${priceStr}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Date</span><span>${date}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Area</span><span>${area}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Block / Reg</span><span>${block} / ${reg}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Category</span><span>${mainCat}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Kind</span><span>${mainKind}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Enclosed</span><span>${enclosed} m²</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Covered</span><span>${covered} m²</span></div>
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:#94a3b8">${label}</span><span style="font-weight:600;text-align:right">${val}</span></div>`;
+    return `<div style="font-size:13px;line-height:1.6;min-width:340px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid rgba(239,68,68,0.5);color:#f87171">${type}</div>
+      ${row("Price", `<span style="color:#4ade80;font-size:15px">${priceStr}</span>`)}
+      ${row("Sale Date", date)}
+      ${row("Area / Village", area)}
+      ${row("Block / Reg No", `${block} / ${reg}`)}
+      ${row("Category", mainCat)}
+      ${row("Kind", mainKind)}
+      ${row("Enclosed Area", enclosed !== "—" ? `${enclosed} m²` : "—")}
+      ${row("Covered Area", covered !== "—" ? `${covered} m²` : "—")}
     </div>`;
   };
 
   const buildTxPopup = (t) => {
     const amount = parseFloat(t.cos_amount);
     const amountStr = !isNaN(amount) ? `€${amount.toLocaleString()}` : "N/A";
-    return `<div class="text-xs space-y-1" style="min-width:200px">
-      <div class="font-semibold text-sm text-green-400">Off-plan Transaction</div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Amount</span><span class="font-medium text-green-400">${amountStr}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Date</span><span>${t.cos_agreement_date || "N/A"}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Area</span><span>${t.town_village_name || "—"}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Block / Reg</span><span>${t.block || "—"} / ${t.reg_no || "—"}</span></div>
-      <div class="flex justify-between"><span class="text-muted-foreground">Share</span><span>${t.share_numerator || "—"}/${t.share_denominator || "—"}</span></div>
-      ${t.remark1 ? `<div class="text-muted-foreground italic mt-1">${t.remark1}</div>` : ""}
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:#94a3b8">${label}</span><span style="font-weight:600;text-align:right">${val}</span></div>`;
+    return `<div style="font-size:13px;line-height:1.6;min-width:340px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid rgba(34,197,94,0.5);color:#4ade80">Off-plan Transaction</div>
+      ${row("Amount", `<span style="color:#4ade80;font-size:15px">${amountStr}</span>`)}
+      ${row("Agreement Date", t.cos_agreement_date || "N/A")}
+      ${row("Area / Village", t.town_village_name || "—")}
+      ${row("Block / Reg No", `${t.block || "—"} / ${t.reg_no || "—"}`)}
+      ${row("Share", `${t.share_numerator || "—"} / ${t.share_denominator || "—"}`)}
+      ${t.remark1 ? `<div style="margin-top:8px;font-style:italic;color:#94a3b8">${t.remark1}</div>` : ""}
     </div>`;
   };
 
@@ -223,11 +225,12 @@ export default function PropertyMap({ properties, transactions }) {
 
         {/* Property markers */}
         {properties.map((p, i) => {
-          const [lat, lng] = mercatorToLatLng(parseFloat(p.center_x), parseFloat(p.center_y));
+          const lat = parseFloat(p.center_y);
+          const lng = parseFloat(p.center_x);
           if (isNaN(lat) || isNaN(lng)) return null;
           return (
             <Marker key={`p-${i}`} position={[lat, lng]} icon={flagIcon}>
-              <Popup maxWidth={320}>
+              <Popup maxWidth={480} minWidth={380}>
                 <div dangerouslySetInnerHTML={{ __html: buildPropertyPopup(p) }} />
               </Popup>
             </Marker>
@@ -236,11 +239,12 @@ export default function PropertyMap({ properties, transactions }) {
 
         {/* Transaction markers */}
         {transactions.map((t, i) => {
-          const [lat, lng] = mercatorToLatLng(parseFloat(t.center_x), parseFloat(t.center_y));
+          const lat = parseFloat(t.center_y);
+          const lng = parseFloat(t.center_x);
           if (isNaN(lat) || isNaN(lng)) return null;
           return (
             <Marker key={`t-${i}`} position={[lat, lng]} icon={offPlanIcon}>
-              <Popup maxWidth={320}>
+              <Popup maxWidth={480} minWidth={380}>
                 <div dangerouslySetInnerHTML={{ __html: buildTxPopup(t) }} />
               </Popup>
             </Marker>
