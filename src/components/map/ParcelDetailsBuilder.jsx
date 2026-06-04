@@ -39,8 +39,9 @@ function renderProp(p, isUnit, parent) {
   rows.push(addNameRow("Municipality", "PrMunicipality", pickName(p.PrMunicipality)));
   rows.push(addRow("Location", "PrLocation", p.PrLocation));
   rows.push(addRow("Extents (m²)", "PrExtents", p.PrExtents));
-  rows.push(addRow("Price Base 1", "PrPriceBase1", p.PrPriceBase1));
-  rows.push(addRow("Price Base 2", "PrPriceBase2", p.PrPriceBase2));
+  rows.push(addRow("Land Register Valuation 2018", "PrPriceBase1", p.PrPriceBase1));
+  rows.push(addRow("2021 Valuation", "PrPriceBase2", p.PrPriceBase2));
+  rows.push(addRow("1980 Valuation", "PrPriceBase3", p.PrPriceBase3));
   rows.push(row("Common Share", p.PrCommonShare));
 
   const zone = p.PrPlanningZone;
@@ -75,9 +76,9 @@ function renderProp(p, isUnit, parent) {
       s.PrUncoveredExtent != null ? `unc ${s.PrUncoveredExtent}` : null,
     ].filter(Boolean).join(" · ");
     const prices = [
-      s.PrPriceBase1 != null ? `P1 ${s.PrPriceBase1}` : null,
-      s.PrPriceBase2 != null ? `P2 ${s.PrPriceBase2}` : null,
-      s.PrPriceBase3 != null ? `P3 ${s.PrPriceBase3}` : null,
+      s.PrPriceBase1 != null ? `2018: ${s.PrPriceBase1}` : null,
+      s.PrPriceBase2 != null ? `2021: ${s.PrPriceBase2}` : null,
+      s.PrPriceBase3 != null ? `1980: ${s.PrPriceBase3}` : null,
     ].filter(Boolean).join(" · ");
     if (line || extents || prices) {
       subRows.push(`<div class="text-xs"><span class="font-medium">${escapeHtml(line)}</span>${extents ? ` <span class="text-muted-foreground">(${escapeHtml(extents)})</span>` : ""}${prices ? ` <span class="text-muted-foreground">[${escapeHtml(prices)}]</span>` : ""}</div>`);
