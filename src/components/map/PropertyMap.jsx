@@ -10,7 +10,7 @@ import { flagIcon, offPlanIcon, ringToLatLng } from "./MapHelpers";
 import { buildDetailsHtml } from "./ParcelDetailsBuilder";
 import ParcelSearch from "./ParcelSearch";
 import NearbyAmenities from "./NearbyAmenities";
-import { BarChart3, X, Loader2 } from "lucide-react";
+import { BarChart3, X, Loader2, MapPin } from "lucide-react";
 
 // ── Bottom Sheet ─────────────────────────────────────────────────────────────
 function BottomSheet({ title, accentColor, children, onClose }) {
@@ -22,10 +22,6 @@ function BottomSheet({ title, accentColor, children, onClose }) {
       maxHeight: "60vh", display: "flex", flexDirection: "column",
       fontFamily: "Roboto, sans-serif",
     }}>
-      {/* Handle bar */}
-      <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: "#e0d8f0" }} />
-      </div>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -158,7 +154,8 @@ export default function PropertyMap({ properties, transactions }) {
   const [parcelDetails, setParcelDetails] = useState(null); // { loading, html }
   const detailsCacheRef = useRef(new Map());
 
-  const closeSheet = useCallback(() => { setSheet(null); setParcelDetails(null); }, []);
+  const [showAmenities, setShowAmenities] = useState(false);
+  const closeSheet = useCallback(() => { setSheet(null); setParcelDetails(null); setShowAmenities(false); }, []);
 
   const handleParcelClick = useCallback((attrs, geometry) => {
     let centroid = null;
@@ -172,6 +169,7 @@ export default function PropertyMap({ properties, transactions }) {
     }
     setSheet({ type: "parcel", data: attrs, centroid });
     setParcelDetails(null);
+    setShowAmenities(false);
     const sbpiId = attrs.SBPI_ID_NO;
     if (!sbpiId) return;
     if (detailsCacheRef.current.has(String(sbpiId))) {
@@ -188,7 +186,8 @@ export default function PropertyMap({ properties, transactions }) {
       .catch(() => setParcelDetails({ loading: false, html: null }));
   }, []);
 
-  const DIST = { 1: "Nicosia", 2: "Limassol", 3: "Larnaca", 4: "Famagusta", 5: "Paphos", 6: "Kyrenia" };
+  // DLS cadastral district codes (matches ArcGIS CadastralMap_EN layer)
+  const DIST = { 1: "Nicosia", 2: "Kyrenia", 3: "Famagusta", 4: "Larnaca", 5: "Limassol", 6: "Paphos" };
 
   // Chart data
   const chartData = useMemo(() => {
@@ -337,7 +336,23 @@ export default function PropertyMap({ properties, transactions }) {
               )}
             </div>
           )}
-          {sheet?.centroid && (
+          {sheet?.centroid && !showAmenities && (
+            <button
+              onClick={() => setShowAmenities(true)}
+              style={{
+                marginTop: 20, width: "100%", padding: "10px",
+                background: "#f5f0ff", color: "#6750a4",
+                border: "1.5px solid #d8d0f0", borderRadius: 24,
+                fontSize: 13, fontWeight: 500, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                fontFamily: "Roboto, sans-serif",
+              }}
+            >
+              <MapPin style={{ width: 14, height: 14 }} />
+              Show Nearby Amenities
+            </button>
+          )}
+          {sheet?.centroid && showAmenities && (
             <NearbyAmenities lat={sheet.centroid[0]} lon={sheet.centroid[1]} />
           )}
         </BottomSheet>
