@@ -20,6 +20,9 @@ export default function ParcelSearch({ mapRef }) {
   const [parcel, setParcel] = useState("");
   const [sheet, setSheet] = useState("");
   const [plan, setPlan] = useState("");
+  const [regDist, setRegDist] = useState("");
+  const [regVil, setRegVil] = useState("");
+  const [regNo, setRegNo] = useState("");
 
   const [villages, setVillages] = useState([]);
   const [quarters, setQuarters] = useState([]);
@@ -130,6 +133,17 @@ export default function ParcelSearch({ mapRef }) {
     if (mode === "plan") {
       const p = plan.trim().replace(/'/g, "''");
       return p ? `PLAN_NBR LIKE '%${p}%'` : null;
+    }
+    if (mode === "reg") {
+      const parts = [];
+      if (regDist) parts.push(`DIST_CODE = ${parseInt(regDist)}`);
+      if (regVil) parts.push(`VIL_CODE = ${parseInt(regVil)}`);
+      if (regNo.trim()) {
+        const n = regNo.trim().replace(/'/g, "''");
+        // Try numeric match first, fallback to SBPI_ID_NO string
+        parts.push(`(PARCEL_NBR = ${parseInt(n) || 0} OR SBPI_ID_NO LIKE '%${n}%')`);
+      }
+      return parts.length ? parts.join(" AND ") : null;
     }
     const parts = [];
     if (dist) parts.push(`DIST_CODE = ${parseInt(dist)}`);
@@ -249,6 +263,7 @@ export default function ParcelSearch({ mapRef }) {
             {[
               { key: "codes", label: "By Codes", icon: <MapPin style={{ width: 13, height: 13 }} /> },
               { key: "plan",  label: "By Plan",  icon: <FileText style={{ width: 13, height: 13 }} /> },
+              { key: "reg",   label: "By Reg.",  icon: <Search style={{ width: 13, height: 13 }} /> },
               { key: "map",   label: "Click Map", icon: <MousePointer style={{ width: 13, height: 13 }} /> },
             ].map((tab) => (
               <button key={tab.key} onClick={() => setMode(tab.key)} style={{
@@ -295,6 +310,28 @@ export default function ParcelSearch({ mapRef }) {
             )}
             {mode === "plan" && (
               <input placeholder="Plan number…" value={plan} onChange={(e) => setPlan(e.target.value)} className={inputCls} />
+            )}
+            {mode === "reg" && (
+              <>
+                <select value={regDist} onChange={(e) => { setRegDist(e.target.value); setRegVil(""); onDistrictChange(e.target.value); }} className={selectCls}>
+                  <option value="">— Τμήμα Εγγραφής (District) —</option>
+                  {Object.entries(DIST).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+                <select value={regVil} onChange={(e) => setRegVil(e.target.value)} disabled={!regDist} className={selectCls} style={{ opacity: regDist ? 1 : 0.5 }}>
+                  <option value="">— Village Code (optional) —</option>
+                  {Object.entries(DIST).length > 0 && regDist && villages.length === 0 && (
+                    <option disabled>Load villages by selecting district in "By Codes" first</option>
+                  )}
+                  {villages.map((v) => <option key={v.code} value={v.code}>{v.name}</option>)}
+                </select>
+                <input
+                  placeholder="Registration / SBPI number…"
+                  value={regNo}
+                  onChange={(e) => setRegNo(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && doSearch()}
+                  className={inputCls}
+                />
+              </>
             )}
             {mode === "map" && (
               <p style={{ fontSize: 12, color: "#7c6fa0", textAlign: "center", padding: "8px 0", margin: 0 }}>
