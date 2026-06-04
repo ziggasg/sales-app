@@ -221,10 +221,17 @@ export default function PropertyMap({ properties, transactions }) {
       if (!ALLOWED_TYPES.has(type)) return;
       typesSet.add(type);
       if (!byMonth[month]) byMonth[month] = { month };
-      if (!byMonth[month][`${type}_total`]) { byMonth[month][`${type}_total`] = 0; byMonth[month][`${type}_count`] = 0; }
-      byMonth[month][`${type}_total`] += parseFloat(p.declared_price) || 0;
-      byMonth[month][`${type}_count`]++;
+      if (!byMonth[month][`${type}_prices`]) byMonth[month][`${type}_prices`] = [];
+      const price = parseFloat(p.declared_price);
+      if (!isNaN(price) && price > 0) byMonth[month][`${type}_prices`].push(price);
     });
+
+    const median = (arr) => {
+      if (!arr.length) return null;
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+    };
 
     const types = Array.from(typesSet).sort();
     const data = Object.values(byMonth)
@@ -232,8 +239,7 @@ export default function PropertyMap({ properties, transactions }) {
       .map((m) => {
         const row = { month: m.month };
         types.forEach((t) => {
-          const count = m[`${t}_count`] || 0;
-          row[t] = count ? Math.round(m[`${t}_total`] / count) : null;
+          row[t] = median(m[`${t}_prices`] || []);
         });
         return row;
       });
@@ -314,7 +320,7 @@ export default function PropertyMap({ properties, transactions }) {
           padding: 16, fontFamily: "Roboto, sans-serif",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Avg Sale Price</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Median Sale Price</h3>
             <button onClick={() => setShowChart(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7c6fa0" }}>
               <X style={{ width: 16, height: 16 }} />
             </button>
