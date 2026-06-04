@@ -66,8 +66,8 @@ function ParcelLayer({ fetchDetails }) {
             : "";
 
           poly.bindPopup(
-            `<div class="text-xs space-y-0.5" style="min-width:220px;max-width:320px"><div class="font-semibold text-sm mb-1">${escapeHtml(label)}</div>${rows}${detailsPlaceholder}</div>`,
-            { maxWidth: 350, maxHeight: 400 }
+            `<div class="text-xs space-y-0.5" style="width:100%;max-width:300px"><div class="font-semibold text-sm mb-1">${escapeHtml(label)}</div>${rows}${detailsPlaceholder}</div>`,
+            { maxWidth: Math.min(320, window.innerWidth - 40), maxHeight: 400 }
           );
 
           poly.on("click", (e) => {
@@ -125,12 +125,12 @@ function ParcelLayer({ fetchDetails }) {
 function MapLegend({ showProperties, showTransactions, onToggleProperties, onToggleTransactions }) {
   return (
     <div style={{
-      position: "absolute", bottom: 32, right: 12, zIndex: 1000,
-      background: "#fff", borderRadius: 16,
+      position: "absolute", bottom: 24, left: 12, zIndex: 1000,
+      background: "#fff", borderRadius: 14,
       boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
-      padding: "12px 16px",
+      padding: "10px 14px",
       fontFamily: "Roboto, sans-serif",
-      fontSize: 12, minWidth: 170,
+      fontSize: 12,
     }}>
       <div style={{ fontWeight: 600, color: "#1a1625", marginBottom: 8, fontSize: 13 }}>Legend</div>
       {[
@@ -193,8 +193,8 @@ export default function PropertyMap({ properties, transactions }) {
     const mainKind = p.main_sbp_kind || "—";
     const enclosed = p.enclosed_ext || "—";
     const covered = p.covered_ext || "—";
-    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid #ede8f5"><span style="color:#7c6fa0">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625">${val}</span></div>`;
-    return `<div style="font-size:13px;line-height:1.6;min-width:340px;font-family:Roboto,sans-serif">
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #ede8f5;flex-wrap:wrap"><span style="color:#7c6fa0;white-space:nowrap">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625;word-break:break-word">${val}</span></div>`;
+    return `<div style="font-size:13px;line-height:1.6;width:100%;font-family:Roboto,sans-serif">
       <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #ef4444;color:#1a1625">${type}</div>
       ${row("Price", `<span style="color:#16a34a;font-size:15px;font-weight:700">${priceStr}</span>`)}
       ${row("Sale Date", date)}
@@ -210,8 +210,8 @@ export default function PropertyMap({ properties, transactions }) {
   const buildTxPopup = (t) => {
     const amount = parseFloat(t.cos_amount);
     const amountStr = !isNaN(amount) ? `€${amount.toLocaleString()}` : "N/A";
-    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid #ede8f5"><span style="color:#7c6fa0">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625">${val}</span></div>`;
-    return `<div style="font-size:13px;line-height:1.6;min-width:340px;font-family:Roboto,sans-serif">
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #ede8f5;flex-wrap:wrap"><span style="color:#7c6fa0;white-space:nowrap">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625;word-break:break-word">${val}</span></div>`;
+    return `<div style="font-size:13px;line-height:1.6;width:100%;font-family:Roboto,sans-serif">
       <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #22c55e;color:#1a1625">Off-plan Transaction</div>
       ${row("Amount", `<span style="color:#16a34a;font-size:15px;font-weight:700">${amountStr}</span>`)}
       ${row("Agreement Date", t.cos_agreement_date || "N/A")}
@@ -244,7 +244,7 @@ export default function PropertyMap({ properties, transactions }) {
           if (isNaN(lat) || isNaN(lng)) return null;
           return (
             <Marker key={`p-${i}`} position={[lat, lng]} icon={flagIcon}>
-              <Popup maxWidth={480} minWidth={380}>
+              <Popup maxWidth={Math.min(360, window.innerWidth - 40)} minWidth={Math.min(280, window.innerWidth - 60)}>
                 <div dangerouslySetInnerHTML={{ __html: buildPropertyPopup(p) }} />
               </Popup>
             </Marker>
@@ -258,7 +258,7 @@ export default function PropertyMap({ properties, transactions }) {
           if (isNaN(lat) || isNaN(lng)) return null;
           return (
             <Marker key={`t-${i}`} position={[lat, lng]} icon={offPlanIcon}>
-              <Popup maxWidth={480} minWidth={380}>
+              <Popup maxWidth={Math.min(360, window.innerWidth - 40)} minWidth={Math.min(280, window.innerWidth - 60)}>
                 <div dangerouslySetInnerHTML={{ __html: buildTxPopup(t) }} />
               </Popup>
             </Marker>
