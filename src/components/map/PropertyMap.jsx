@@ -24,7 +24,7 @@ function ParcelLayer({ fetchDetails }) {
 
     const layer = L.layerGroup().addTo(map);
     let cancelled = false;
-    const defaultStyle = { color: "#00ffff", weight: 1, fill: true, fillColor: "#00ffff", fillOpacity: 0.05 };
+    const defaultStyle = { color: "#6750a4", weight: 1, fill: true, fillColor: "#6750a4", fillOpacity: 0.08 };
     const selectedStyle = { color: "#facc15", weight: 3, fill: true, fillColor: "#facc15", fillOpacity: 0.25 };
     let selected = null;
     const clearSelection = () => {
@@ -121,8 +121,8 @@ function ParcelLayer({ fetchDetails }) {
   return null;
 }
 
-// Legend overlay — MD3 surface card
-function MapLegend() {
+// Legend overlay — MD3 surface card with toggleable layers
+function MapLegend({ showProperties, showTransactions, onToggleProperties, onToggleTransactions }) {
   return (
     <div style={{
       position: "absolute", bottom: 32, right: 12, zIndex: 1000,
@@ -130,20 +130,24 @@ function MapLegend() {
       boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
       padding: "12px 16px",
       fontFamily: "Roboto, sans-serif",
-      fontSize: 12, minWidth: 160,
+      fontSize: 12, minWidth: 170,
     }}>
       <div style={{ fontWeight: 600, color: "#1a1625", marginBottom: 8, fontSize: 13 }}>Legend</div>
       {[
-        { color: "#ef4444", label: "Property Sale" },
-        { color: "#22c55e", label: "Off-plan Transaction" },
-      ].map(({ color, label }) => (
-        <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <span style={{ width: 12, height: 12, borderRadius: "50%", background: color, border: "2px solid #fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", display: "inline-block" }} />
-          <span style={{ color: "#5c4b8a" }}>{label}</span>
-        </div>
+        { color: "#ef4444", label: "Property Sale", active: showProperties, onToggle: onToggleProperties },
+        { color: "#22c55e", label: "Off-plan Transaction", active: showTransactions, onToggle: onToggleTransactions },
+      ].map(({ color, label, active, onToggle }) => (
+        <button key={label} onClick={onToggle} style={{
+          display: "flex", alignItems: "center", gap: 8, marginBottom: 6,
+          background: "none", border: "none", cursor: "pointer", padding: 0, width: "100%",
+          opacity: active ? 1 : 0.4, transition: "opacity 0.2s",
+        }}>
+          <span style={{ width: 12, height: 12, borderRadius: "50%", background: color, border: "2px solid #fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", display: "inline-block", flexShrink: 0 }} />
+          <span style={{ color: "#5c4b8a", textDecoration: active ? "none" : "line-through", fontSize: 12 }}>{label}</span>
+        </button>
       ))}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(103,80,164,0.15)", border: "1.5px solid #6750a4", display: "inline-block" }} />
+        <span style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(103,80,164,0.15)", border: "1.5px solid #6750a4", display: "inline-block", flexShrink: 0 }} />
         <span style={{ color: "#5c4b8a" }}>Cadastral Parcel</span>
       </div>
     </div>
@@ -153,6 +157,8 @@ function MapLegend() {
 export default function PropertyMap({ properties, transactions }) {
   const mapRef = useRef(null);
   const [showChart, setShowChart] = useState(false);
+  const [showProperties, setShowProperties] = useState(true);
+  const [showTransactions, setShowTransactions] = useState(true);
 
   const fetchDetails = async (sbpiId) => {
     const res = await getPropertyData({ action: "parcelDetails", sbpiId });
@@ -232,7 +238,7 @@ export default function PropertyMap({ properties, transactions }) {
         <ParcelLayer fetchDetails={fetchDetails} />
 
         {/* Property markers */}
-        {properties.map((p, i) => {
+        {showProperties && properties.map((p, i) => {
           const lat = parseFloat(p.center_y);
           const lng = parseFloat(p.center_x);
           if (isNaN(lat) || isNaN(lng)) return null;
@@ -246,7 +252,7 @@ export default function PropertyMap({ properties, transactions }) {
         })}
 
         {/* Transaction markers */}
-        {transactions.map((t, i) => {
+        {showTransactions && transactions.map((t, i) => {
           const lat = parseFloat(t.center_y);
           const lng = parseFloat(t.center_x);
           if (isNaN(lat) || isNaN(lng)) return null;
@@ -264,7 +270,12 @@ export default function PropertyMap({ properties, transactions }) {
       <ParcelSearch mapRef={mapRef} />
 
       {/* Legend */}
-      <MapLegend />
+      <MapLegend
+        showProperties={showProperties}
+        showTransactions={showTransactions}
+        onToggleProperties={() => setShowProperties(v => !v)}
+        onToggleTransactions={() => setShowTransactions(v => !v)}
+      />
 
       {/* Chart toggle — MD3 FAB */}
       <button
