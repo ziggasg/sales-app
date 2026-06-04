@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip as ReTooltip, Legend, ResponsiveContainer,
-} from "recharts";
 import { getPropertyData } from "@/functions/getPropertyData";
 import { flagIcon, offPlanIcon, ringToLatLng } from "./MapHelpers";
 import { buildDetailsHtml } from "./ParcelDetailsBuilder";
 import ParcelSearch from "./ParcelSearch";
 import NearbyAmenities from "./NearbyAmenities.jsx";
-import { BarChart3, X, Loader2, MapPin } from "lucide-react";
+import { X, Loader2, MapPin } from "lucide-react";
 
 // ── Bottom Sheet ─────────────────────────────────────────────────────────────
 function BottomSheet({ title, accentColor, children, onClose }) {
@@ -110,16 +106,6 @@ function MapTapDismiss({ onTap }) {
   return null;
 }
 
-// Track map bounds on every move
-function BoundsTracker({ onBoundsChange }) {
-  const map = useMapEvents({
-    moveend: () => onBoundsChange(map.getBounds()),
-    zoomend: () => onBoundsChange(map.getBounds()),
-  });
-  useEffect(() => { onBoundsChange(map.getBounds()); }, []);
-  return null;
-}
-
 // ── Legend ───────────────────────────────────────────────────────────────────
 function MapLegend({ showProperties, showTransactions, onToggleProperties, onToggleTransactions }) {
   return (
@@ -155,10 +141,8 @@ function MapLegend({ showProperties, showTransactions, onToggleProperties, onTog
 // ── Main component ────────────────────────────────────────────────────────────
 export default function PropertyMap({ properties, transactions }) {
   const mapRef = useRef(null);
-  const [showChart, setShowChart] = useState(false);
   const [showProperties, setShowProperties] = useState(true);
   const [showTransactions, setShowTransactions] = useState(false);
-  const [mapBounds, setMapBounds] = useState(null);
 
   // Bottom sheet state
   const [sheet, setSheet] = useState(null); // { type: 'parcel'|'property'|'transaction', data }
@@ -200,72 +184,7 @@ export default function PropertyMap({ properties, transactions }) {
   // DLS cadastral district codes (matches ArcGIS CadastralMap_EN layer)
   const DIST = { 1: "Nicosia", 2: "Kyrenia", 3: "Famagusta", 4: "Larnaca", 5: "Limassol", 6: "Paphos" };
 
-  // Chart data — from 2026-01-01, one avg price line per parcel type
-  const ALLOWED_TYPES = new Set(["ΓΡΑΦΕΙΟ","ΔΙΑΜΕΡΙΣΜΑ","ΔΙΟΡΟΦΗ ΚΑΤΟΙΚΙΑ","ΙΣΟΓΕΙΑ ΚΑΤΟΙΚΙΑ","ΚΑΤΑΣΤΗΜΑ","ΟΙΚΟΠΕΔΟ","ΧΩΡΑΦΙ"]);
 
-  const { chartData, chartTypes } = useMemo(() => {
-    const byMonth = {};
-    const typesSet = new Set();
-
-    properties.forEach((p) => {
-      if (!p.sale_acceptance_date) return;
-      if (p.sale_acceptance_date < "2026-01-01") return;
-      // Filter to map viewport
-      if (mapBounds) {
-        const lat = parseFloat(p.center_y), lng = parseFloat(p.center_x);
-        if (isNaN(lat) || isNaN(lng)) return;
-        if (!mapBounds.contains([lat, lng])) return;
-      }
-      const d = p.sale_acceptance_date;
-      const year = d.substring(0, 4);
-      const q = Math.ceil(parseInt(d.substring(5, 7)) / 3);
-      const month = `${year} Q${q}`;
-      const type = p.fiscal_property_type || p.main_sbp_cat || "Other";
-      if (!ALLOWED_TYPES.has(type)) return;
-      typesSet.add(type);
-      if (!byMonth[month]) byMonth[month] = { month };
-      if (!byMonth[month][`${type}_prices`]) byMonth[month][`${type}_prices`] = [];
-      const price = parseFloat(p.declared_price);
-      if (isNaN(price) || price <= 0) return;
-
-      // Area calculation: for apartments sum enclosed + covered, else use enclosed or covered
-      let area = null;
-      const enclosed = parseFloat(p.enclosed_ext);
-      const covered = parseFloat(p.covered_ext);
-      if (type === "ΔΙΑΜΕΡΙΣΜΑ") {
-        const e = isNaN(enclosed) ? 0 : enclosed;
-        const c = isNaN(covered) ? 0 : covered;
-        area = e + c > 0 ? e + c : null;
-      } else {
-        area = !isNaN(enclosed) && enclosed > 0 ? enclosed
-             : !isNaN(covered) && covered > 0 ? covered
-             : null;
-      }
-      if (!area) return;
-
-      byMonth[month][`${type}_prices`].push(price / area);
-    });
-
-    const median = (arr) => {
-      if (!arr.length) return null;
-      const sorted = [...arr].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
-    };
-
-    const types = Array.from(typesSet).sort();
-    const data = Object.values(byMonth)
-      .sort((a, b) => a.month.localeCompare(b.month))
-      .map((m) => {
-        const row = { month: m.month };
-        types.forEach((t) => {
-          row[t] = median(m[`${t}_prices`] || []);
-        });
-        return row;
-      });
-
-    return { chartData: data, chartTypes: types };
-  }, [properties, mapBounds]);
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
@@ -282,7 +201,6 @@ export default function PropertyMap({ properties, transactions }) {
         />
         <ParcelLayer onParcelClick={handleParcelClick} />
         <MapTapDismiss onTap={closeSheet} />
-        <BoundsTracker onBoundsChange={setMapBounds} />
 
         {showProperties && properties.map((p, i) => {
           const lat = parseFloat(p.center_y), lng = parseFloat(p.center_x);
@@ -316,66 +234,7 @@ export default function PropertyMap({ properties, transactions }) {
         onToggleTransactions={() => setShowTransactions(v => !v)}
       />
 
-      {/* Chart FAB */}
-      <button
-        onClick={() => setShowChart(!showChart)}
-        title="Price Trends"
-        style={{
-          position: "absolute", top: 12, right: 12, zIndex: 1000,
-          background: "#6750a4", color: "#fff",
-          border: "none", borderRadius: 16, width: 44, height: 44,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 2px 8px rgba(103,80,164,0.4)", cursor: "pointer",
-        }}
-      >
-        <BarChart3 style={{ width: 20, height: 20 }} />
-      </button>
 
-      {/* Chart panel */}
-      {showChart && (
-        <div style={{
-          position: "absolute", top: 64, right: 12, left: 12, zIndex: 1000,
-          background: "#fff", borderRadius: 20,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-          padding: 16, fontFamily: "Roboto, sans-serif",
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Quarterly Median Sale Price per m²</h3>
-            <button onClick={() => setShowChart(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7c6fa0" }}>
-              <X style={{ width: 16, height: 16 }} />
-            </button>
-          </div>
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ede8f5" />
-                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#9c8fba" }} />
-                <YAxis tick={{ fontSize: 9, fill: "#9c8fba" }} tickFormatter={(v) => `€${Math.round(v).toLocaleString()}`} />
-                <ReTooltip
-                  contentStyle={{ background: "#fff", border: "1px solid #ede8f5", borderRadius: 12, fontSize: 11 }}
-                  formatter={(v, name) => v != null ? [`€${Math.round(v).toLocaleString()}/m²`, name] : [null, name]}
-                />
-                <Legend wrapperStyle={{ fontSize: 9, color: "#7c6fa0" }} />
-                {chartTypes.map((type, i) => {
-                  const colors = ["#6750a4","#ef4444","#22c55e","#f59e0b","#3b82f6","#ec4899","#14b8a6","#f97316"];
-                  return (
-                    <Line
-                      key={type}
-                      type="monotone"
-                      dataKey={type}
-                      name={type}
-                      stroke={colors[i % colors.length]}
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls={false}
-                    />
-                  );
-                })}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
 
       {/* ── Bottom Sheets ── */}
 
