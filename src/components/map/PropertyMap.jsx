@@ -190,6 +190,8 @@ export default function PropertyMap({ properties, transactions }) {
   const DIST = { 1: "Nicosia", 2: "Kyrenia", 3: "Famagusta", 4: "Larnaca", 5: "Limassol", 6: "Paphos" };
 
   // Chart data — from 2026-01-01, one avg price line per parcel type
+  const ALLOWED_TYPES = new Set(["ΓΡΑΦΕΙΟ","ΔΙΑΜΕΡΙΣΜΑ","ΔΙΟΡΟΦΗ ΚΑΤΟΙΚΙΑ","ΙΣΟΓΕΙΑ ΚΑΤΟΙΚΙΑ","ΚΑΤΑΣΤΗΜΑ","ΟΙΚΟΠΕΔΟ","ΧΩΡΑΦΙ"]);
+
   const { chartData, chartTypes } = useMemo(() => {
     const byMonth = {};
     const typesSet = new Set();
@@ -199,6 +201,7 @@ export default function PropertyMap({ properties, transactions }) {
       if (p.sale_acceptance_date < "2026-01-01") return;
       const month = p.sale_acceptance_date.substring(0, 7);
       const type = p.fiscal_property_type || p.main_sbp_cat || "Other";
+      if (!ALLOWED_TYPES.has(type)) return;
       typesSet.add(type);
       if (!byMonth[month]) byMonth[month] = { month };
       if (!byMonth[month][`${type}_total`]) { byMonth[month][`${type}_total`] = 0; byMonth[month][`${type}_count`] = 0; }
