@@ -21,8 +21,8 @@ const fmtEur = (v) => {
 
 const valuationCard = (p1, p2, p3) => {
   const items = [
-    p1 != null ? { year: "2018", label: "Land Register", val: p1 } : null,
     p2 != null ? { year: "2021", label: "Valuation",     val: p2 } : null,
+    p1 != null ? { year: "2018", label: "Land Register", val: p1 } : null,
     p3 != null ? { year: "1980", label: "Valuation",     val: p3 } : null,
   ].filter(Boolean);
   if (!items.length) return "";
