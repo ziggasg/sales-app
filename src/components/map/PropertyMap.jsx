@@ -110,6 +110,16 @@ function MapTapDismiss({ onTap }) {
   return null;
 }
 
+// Track map bounds on every move
+function BoundsTracker({ onBoundsChange }) {
+  const map = useMapEvents({
+    moveend: () => onBoundsChange(map.getBounds()),
+    zoomend: () => onBoundsChange(map.getBounds()),
+  });
+  useEffect(() => { onBoundsChange(map.getBounds()); }, []);
+  return null;
+}
+
 // ── Legend ───────────────────────────────────────────────────────────────────
 function MapLegend({ showProperties, showTransactions, onToggleProperties, onToggleTransactions }) {
   return (
@@ -148,6 +158,7 @@ export default function PropertyMap({ properties, transactions }) {
   const [showChart, setShowChart] = useState(false);
   const [showProperties, setShowProperties] = useState(true);
   const [showTransactions, setShowTransactions] = useState(false);
+  const [mapBounds, setMapBounds] = useState(null);
 
   // Bottom sheet state
   const [sheet, setSheet] = useState(null); // { type: 'parcel'|'property'|'transaction', data }
@@ -199,6 +210,12 @@ export default function PropertyMap({ properties, transactions }) {
     properties.forEach((p) => {
       if (!p.sale_acceptance_date) return;
       if (p.sale_acceptance_date < "2026-01-01") return;
+      // Filter to map viewport
+      if (mapBounds) {
+        const lat = parseFloat(p.center_y), lng = parseFloat(p.center_x);
+        if (isNaN(lat) || isNaN(lng)) return;
+        if (!mapBounds.contains([lat, lng])) return;
+      }
       const month = p.sale_acceptance_date.substring(0, 7);
       const type = p.fiscal_property_type || p.main_sbp_cat || "Other";
       if (!ALLOWED_TYPES.has(type)) return;
@@ -222,7 +239,7 @@ export default function PropertyMap({ properties, transactions }) {
       });
 
     return { chartData: data, chartTypes: types };
-  }, [properties]);
+  }, [properties, mapBounds]);
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
@@ -239,6 +256,7 @@ export default function PropertyMap({ properties, transactions }) {
         />
         <ParcelLayer onParcelClick={handleParcelClick} />
         <MapTapDismiss onTap={closeSheet} />
+        <BoundsTracker onBoundsChange={setMapBounds} />
 
         {showProperties && properties.map((p, i) => {
           const lat = parseFloat(p.center_y), lng = parseFloat(p.center_x);
