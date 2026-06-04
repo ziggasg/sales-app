@@ -121,22 +121,30 @@ function ParcelLayer({ fetchDetails }) {
   return null;
 }
 
-// Legend overlay
+// Legend overlay — MD3 surface card
 function MapLegend() {
   return (
-    <div className="absolute bottom-8 right-3 z-[1000] bg-card/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg text-xs space-y-1.5">
-      <div className="font-semibold text-foreground mb-1">Legend</div>
-      <div className="flex items-center gap-2">
-        <span className="w-3 h-3 rounded-full bg-red-500 border border-white shadow-sm inline-block" />
-        <span className="text-muted-foreground">Property Sale</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm inline-block" />
-        <span className="text-muted-foreground">Off-plan Transaction</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="w-3 h-3 inline-block border border-cyan-400" style={{ background: "rgba(0,255,255,0.1)" }} />
-        <span className="text-muted-foreground">Cadastral Parcel</span>
+    <div style={{
+      position: "absolute", bottom: 32, right: 12, zIndex: 1000,
+      background: "#fff", borderRadius: 16,
+      boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+      padding: "12px 16px",
+      fontFamily: "Roboto, sans-serif",
+      fontSize: 12, minWidth: 160,
+    }}>
+      <div style={{ fontWeight: 600, color: "#1a1625", marginBottom: 8, fontSize: 13 }}>Legend</div>
+      {[
+        { color: "#ef4444", label: "Property Sale" },
+        { color: "#22c55e", label: "Off-plan Transaction" },
+      ].map(({ color, label }) => (
+        <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <span style={{ width: 12, height: 12, borderRadius: "50%", background: color, border: "2px solid #fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", display: "inline-block" }} />
+          <span style={{ color: "#5c4b8a" }}>{label}</span>
+        </div>
+      ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(103,80,164,0.15)", border: "1.5px solid #6750a4", display: "inline-block" }} />
+        <span style={{ color: "#5c4b8a" }}>Cadastral Parcel</span>
       </div>
     </div>
   );
@@ -179,10 +187,10 @@ export default function PropertyMap({ properties, transactions }) {
     const mainKind = p.main_sbp_kind || "—";
     const enclosed = p.enclosed_ext || "—";
     const covered = p.covered_ext || "—";
-    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:#94a3b8">${label}</span><span style="font-weight:600;text-align:right">${val}</span></div>`;
-    return `<div style="font-size:13px;line-height:1.6;min-width:340px">
-      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid rgba(239,68,68,0.5);color:#f87171">${type}</div>
-      ${row("Price", `<span style="color:#4ade80;font-size:15px">${priceStr}</span>`)}
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid #ede8f5"><span style="color:#7c6fa0">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625">${val}</span></div>`;
+    return `<div style="font-size:13px;line-height:1.6;min-width:340px;font-family:Roboto,sans-serif">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #ef4444;color:#1a1625">${type}</div>
+      ${row("Price", `<span style="color:#16a34a;font-size:15px;font-weight:700">${priceStr}</span>`)}
       ${row("Sale Date", date)}
       ${row("Area / Village", area)}
       ${row("Block / Reg No", `${block} / ${reg}`)}
@@ -196,15 +204,15 @@ export default function PropertyMap({ properties, transactions }) {
   const buildTxPopup = (t) => {
     const amount = parseFloat(t.cos_amount);
     const amountStr = !isNaN(amount) ? `€${amount.toLocaleString()}` : "N/A";
-    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:#94a3b8">${label}</span><span style="font-weight:600;text-align:right">${val}</span></div>`;
-    return `<div style="font-size:13px;line-height:1.6;min-width:340px">
-      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid rgba(34,197,94,0.5);color:#4ade80">Off-plan Transaction</div>
-      ${row("Amount", `<span style="color:#4ade80;font-size:15px">${amountStr}</span>`)}
+    const row = (label, val) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid #ede8f5"><span style="color:#7c6fa0">${label}</span><span style="font-weight:500;text-align:right;color:#1a1625">${val}</span></div>`;
+    return `<div style="font-size:13px;line-height:1.6;min-width:340px;font-family:Roboto,sans-serif">
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #22c55e;color:#1a1625">Off-plan Transaction</div>
+      ${row("Amount", `<span style="color:#16a34a;font-size:15px;font-weight:700">${amountStr}</span>`)}
       ${row("Agreement Date", t.cos_agreement_date || "N/A")}
       ${row("Area / Village", t.town_village_name || "—")}
       ${row("Block / Reg No", `${t.block || "—"} / ${t.reg_no || "—"}`)}
       ${row("Share", `${t.share_numerator || "—"} / ${t.share_denominator || "—"}`)}
-      ${t.remark1 ? `<div style="margin-top:8px;font-style:italic;color:#94a3b8">${t.remark1}</div>` : ""}
+      ${t.remark1 ? `<div style="margin-top:8px;font-style:italic;color:#7c6fa0">${t.remark1}</div>` : ""}
     </div>`;
   };
 
@@ -258,37 +266,51 @@ export default function PropertyMap({ properties, transactions }) {
       {/* Legend */}
       <MapLegend />
 
-      {/* Chart toggle */}
+      {/* Chart toggle — MD3 FAB */}
       <button
         onClick={() => setShowChart(!showChart)}
-        className="absolute top-3 right-3 z-[1000] p-2 bg-card/95 backdrop-blur-sm border border-border rounded-lg text-foreground hover:bg-accent transition-colors shadow-lg"
         title="Price Trends"
+        style={{
+          position: "absolute", top: 12, right: 12, zIndex: 1000,
+          background: "#6750a4", color: "#fff",
+          border: "none", borderRadius: 16,
+          width: 44, height: 44,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 2px 8px rgba(103,80,164,0.4)",
+          cursor: "pointer", transition: "box-shadow 0.2s",
+        }}
       >
-        <BarChart3 className="w-5 h-5" />
+        <BarChart3 style={{ width: 20, height: 20 }} />
       </button>
 
-      {/* Chart panel */}
+      {/* Chart panel — MD3 surface card */}
       {showChart && (
-        <div className="absolute top-14 right-3 z-[1000] w-96 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-xl p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-semibold text-foreground">Monthly Average Sale Price</h3>
-            <button onClick={() => setShowChart(false)} className="text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
+        <div style={{
+          position: "absolute", top: 64, right: 12, zIndex: 1000,
+          width: 380, background: "#fff",
+          borderRadius: 20,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+          padding: 16, fontFamily: "Roboto, sans-serif",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#1a1625" }}>Monthly Average Sale Price</h3>
+            <button onClick={() => setShowChart(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7c6fa0" }}>
+              <X style={{ width: 16, height: 16 }} />
             </button>
           </div>
-          <div className="h-48">
+          <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 28% 25%)" />
-                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "hsl(215 20% 65%)" }} />
-                <YAxis tick={{ fontSize: 9, fill: "hsl(215 20% 65%)" }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#ede8f5" />
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#9c8fba" }} />
+                <YAxis tick={{ fontSize: 9, fill: "#9c8fba" }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
                 <ReTooltip
-                  contentStyle={{ background: "hsl(217 33% 17%)", border: "1px solid hsl(215 28% 25%)", borderRadius: "0.5rem", fontSize: 11 }}
-                  labelStyle={{ color: "hsl(210 40% 98%)" }}
+                  contentStyle={{ background: "#fff", border: "1px solid #ede8f5", borderRadius: 12, fontSize: 11, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+                  labelStyle={{ color: "#1a1625", fontWeight: 600 }}
                   formatter={(v) => [`€${v.toLocaleString()}`, "Avg Price"]}
                 />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Line type="monotone" dataKey="avgPrice" name="Avg Price" stroke="#22c55e" strokeWidth={2} dot={false} />
+                <Legend wrapperStyle={{ fontSize: 10, color: "#7c6fa0" }} />
+                <Line type="monotone" dataKey="avgPrice" name="Avg Price" stroke="#6750a4" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="sales" name="Sales Count" stroke="#ef4444" strokeWidth={1.5} dot={false} />
               </LineChart>
             </ResponsiveContainer>

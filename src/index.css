@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Flex:opsz,wght@8..144,300;8..144,400;8..144,500;8..144,700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,78 +6,80 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 25%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 25%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 25%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 28% 25%;
-    --input: 215 28% 25%;
-    --ring: 216 34% 50%;
-    --chart-1: 12 76% 61%;
+    /* MD3 light surface tones */
+    --background: 270 14% 97%;
+    --foreground: 270 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 270 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 10% 10%;
+    /* MD3 primary: purple/violet */
+    --primary: 265 84% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 265 30% 94%;
+    --secondary-foreground: 265 40% 30%;
+    --muted: 270 12% 94%;
+    --muted-foreground: 270 8% 46%;
+    --accent: 265 30% 90%;
+    --accent-foreground: 265 50% 25%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 12% 88%;
+    --input: 270 12% 88%;
+    --ring: 265 84% 45%;
+    --chart-1: 265 84% 45%;
     --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.625rem;
-    --font-heading: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 33% 25%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 28% 25%;
-    --sidebar-ring: 216 34% 50%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 340 75% 55%;
+    --chart-5: 43 74% 66%;
+    --radius: 1rem;
+    --font-heading: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --sidebar-background: 270 14% 97%;
+    --sidebar-foreground: 270 10% 10%;
+    --sidebar-primary: 265 84% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 265 30% 90%;
+    --sidebar-accent-foreground: 265 50% 25%;
+    --sidebar-border: 270 12% 88%;
+    --sidebar-ring: 265 84% 45%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 25%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 25%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 25%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 28% 25%;
-    --input: 215 28% 25%;
-    --ring: 216 34% 50%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
+    --background: 270 14% 97%;
+    --foreground: 270 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 270 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 10% 10%;
+    --primary: 265 84% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 265 30% 94%;
+    --secondary-foreground: 265 40% 30%;
+    --muted: 270 12% 94%;
+    --muted-foreground: 270 8% 46%;
+    --accent: 265 30% 90%;
+    --accent-foreground: 265 50% 25%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 12% 88%;
+    --input: 270 12% 88%;
+    --ring: 265 84% 45%;
+    --chart-1: 265 84% 45%;
+    --chart-2: 173 58% 39%;
     --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 33% 25%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 28% 25%;
-    --sidebar-ring: 216 34% 50%;
+    --chart-4: 340 75% 55%;
+    --chart-5: 43 74% 66%;
+    --sidebar-background: 270 14% 97%;
+    --sidebar-foreground: 270 10% 10%;
+    --sidebar-primary: 265 84% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 265 30% 90%;
+    --sidebar-accent-foreground: 265 50% 25%;
+    --sidebar-border: 270 12% 88%;
+    --sidebar-ring: 265 84% 45%;
   }
 }
 
@@ -91,18 +93,18 @@
   }
 }
 
-/* Leaflet overrides */
+/* Leaflet overrides — MD3 light surface */
 .leaflet-container {
-  background: hsl(222 47% 11%) !important;
-  font-family: 'Inter', sans-serif !important;
+  background: #f5f0ff !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 
 .leaflet-popup-content-wrapper {
-  background: hsl(217 33% 17%) !important;
-  color: hsl(210 40% 98%) !important;
-  border-radius: 0.5rem !important;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-  border: 1px solid hsl(215 28% 25%) !important;
+  background: #ffffff !important;
+  color: #1a1625 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08) !important;
+  border: 1px solid #e8e3f0 !important;
 }
 
 .leaflet-popup-content {
@@ -111,31 +113,50 @@
   line-height: 1.6 !important;
   max-height: 500px !important;
   overflow-y: auto !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 
 .leaflet-popup-tip {
-  background: hsl(217 33% 17%) !important;
-  border: 1px solid hsl(215 28% 25%) !important;
+  background: #ffffff !important;
 }
 
 .leaflet-popup-close-button {
-  color: hsl(215 20% 65%) !important;
+  color: #7c6fa0 !important;
+  font-size: 18px !important;
+  top: 10px !important;
+  right: 12px !important;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
 }
 
 .leaflet-control-zoom a {
-  background: hsl(217 33% 17%) !important;
-  color: hsl(210 40% 98%) !important;
-  border-color: hsl(215 28% 25%) !important;
+  background: #ffffff !important;
+  color: #5c4b8a !important;
+  border-color: #e8e3f0 !important;
+  font-size: 16px !important;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #f0ebff !important;
 }
 
 .leaflet-control-attribution {
-  background: hsla(222, 47%, 11%, 0.8) !important;
-  color: hsl(215 20% 65%) !important;
+  background: rgba(255,255,255,0.85) !important;
+  color: #7c6fa0 !important;
   font-size: 10px !important;
+  border-radius: 8px 0 0 0 !important;
 }
 
 .leaflet-control-attribution a {
-  color: hsl(216 34% 50%) !important;
+  color: #6750a4 !important;
 }
 
 .property-dot-icon {

@@ -7,6 +7,9 @@ import {
   KNOWN_KEYS, fmtLabel, fmtValue,
 } from "./MapHelpers";
 
+const inputCls = "w-full px-3 py-2 bg-[#f5f0ff] border border-[#e0d8f0] rounded-xl text-[#1a1625] text-xs focus:outline-none focus:ring-2 focus:ring-[#6750a4] placeholder:text-[#9c8fba]";
+const selectCls = "w-full px-3 py-2 bg-[#f5f0ff] border border-[#e0d8f0] rounded-xl text-[#1a1625] text-xs focus:outline-none focus:ring-2 focus:ring-[#6750a4]";
+
 export default function ParcelSearch({ mapRef }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("codes");
@@ -148,7 +151,7 @@ export default function ParcelSearch({ mapRef }) {
     feats.forEach((f) => {
       const latlngs = ringToLatLng(f.geometry);
       if (latlngs) {
-        L.polygon(latlngs, { color: "#00ffff", weight: 1.5, fillColor: "#00ffff", fillOpacity: 0.15 }).addTo(layerRef.current);
+        L.polygon(latlngs, { color: "#6750a4", weight: 1.5, fillColor: "#6750a4", fillOpacity: 0.15 }).addTo(layerRef.current);
       }
     });
   };
@@ -177,12 +180,8 @@ export default function ParcelSearch({ mapRef }) {
     setResults([]); setActiveIdx(-1); setDetailFor(null);
     try {
       const params = new URLSearchParams({
-        where: w,
-        outFields: "*",
-        returnGeometry: "true",
-        outSR: "4326",
-        resultRecordCount: "200",
-        f: "json",
+        where: w, outFields: "*", returnGeometry: "true",
+        outSR: "4326", resultRecordCount: "200", f: "json",
       });
       const res = await fetch(`${BASE_QUERY}?${params}`);
       const data = await res.json();
@@ -209,132 +208,174 @@ export default function ParcelSearch({ mapRef }) {
 
   return (
     <div className="absolute top-3 left-3 z-[1000] w-80 max-h-[calc(100vh-24px)] flex flex-col">
-      {/* Toggle button */}
+      {/* MD3 FAB-style toggle button */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-2 bg-card/95 backdrop-blur-sm border border-border rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors shadow-lg"
+        style={{
+          background: "#6750a4",
+          color: "#fff",
+          borderRadius: "16px",
+          padding: "10px 20px",
+          boxShadow: "0 2px 8px rgba(103,80,164,0.4)",
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "14px",
+          fontWeight: 500,
+          fontFamily: "Roboto, sans-serif",
+          cursor: "pointer",
+          transition: "box-shadow 0.2s",
+        }}
       >
-        <Search className="w-4 h-4" />
+        <Search style={{ width: 16, height: 16 }} />
         Parcel Search
-        {open ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+        {open ? <ChevronUp style={{ width: 14, height: 14, marginLeft: "auto" }} /> : <ChevronDown style={{ width: 14, height: 14, marginLeft: "auto" }} />}
       </button>
 
       {open && (
-        <div className="mt-2 bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-xl overflow-y-auto text-xs">
-          {/* Mode tabs */}
-          <div className="flex border-b border-border">
+        <div style={{
+          marginTop: 8,
+          background: "#ffffff",
+          borderRadius: 20,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)",
+          overflow: "hidden",
+          overflowY: "auto",
+          maxHeight: "calc(100vh - 100px)",
+          fontFamily: "Roboto, sans-serif",
+        }}>
+          {/* Mode tabs — MD3 secondary tab style */}
+          <div style={{ display: "flex", borderBottom: "1px solid #ede8f5" }}>
             {[
-              { key: "codes", label: "By Codes", icon: <MapPin className="w-3 h-3" /> },
-              { key: "plan", label: "By Plan", icon: <FileText className="w-3 h-3" /> },
-              { key: "map", label: "Click Map", icon: <MousePointer className="w-3 h-3" /> },
+              { key: "codes", label: "By Codes", icon: <MapPin style={{ width: 13, height: 13 }} /> },
+              { key: "plan",  label: "By Plan",  icon: <FileText style={{ width: 13, height: 13 }} /> },
+              { key: "map",   label: "Click Map", icon: <MousePointer style={{ width: 13, height: 13 }} /> },
             ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setMode(tab.key)}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1 text-xs font-medium transition-colors
-                  ${mode === tab.key ? "bg-accent text-foreground border-b-2 border-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
+              <button key={tab.key} onClick={() => setMode(tab.key)} style={{
+                flex: 1,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                padding: "10px 4px",
+                fontSize: 11,
+                fontWeight: mode === tab.key ? 600 : 400,
+                color: mode === tab.key ? "#6750a4" : "#7c6fa0",
+                background: "none", border: "none",
+                borderBottom: mode === tab.key ? "2px solid #6750a4" : "2px solid transparent",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}>
                 {tab.icon} {tab.label}
               </button>
             ))}
           </div>
 
-          <div className="p-3 space-y-2">
+          <div style={{ padding: "14px", display: "flex", flexDirection: "column", gap: 10 }}>
             {mode === "codes" && (
               <>
-                <select value={dist} onChange={(e) => onDistrictChange(e.target.value)}
-                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-xs">
+                <select value={dist} onChange={(e) => onDistrictChange(e.target.value)} className={selectCls}>
                   <option value="">— District —</option>
                   {Object.entries(DIST).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
-                {vilStatus && <p className="text-[10px] text-muted-foreground">{vilStatus}</p>}
-                <select value={vil} onChange={(e) => onVillageChange(e.target.value)} disabled={!villages.length}
-                  className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-xs disabled:opacity-50">
+                {vilStatus && <p style={{ fontSize: 10, color: "#9c8fba", margin: 0 }}>{vilStatus}</p>}
+                <select value={vil} onChange={(e) => onVillageChange(e.target.value)} disabled={!villages.length} className={selectCls} style={{ opacity: villages.length ? 1 : 0.5 }}>
                   <option value="">— Village —</option>
                   {villages.map((v) => <option key={v.code} value={v.code}>{v.name}</option>)}
                 </select>
                 {quarters.length > 0 && (
-                  <select value={qrtr} onChange={(e) => setQrtr(e.target.value)}
-                    className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-xs">
+                  <select value={qrtr} onChange={(e) => setQrtr(e.target.value)} className={selectCls}>
                     <option value="">— Quarter —</option>
                     {quarters.map((q) => <option key={q.code} value={q.code}>{q.name}</option>)}
                   </select>
                 )}
-                <div className="grid grid-cols-3 gap-1">
-                  <input placeholder="Block" value={blck} onChange={(e) => setBlck(e.target.value)}
-                    className="px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-xs" />
-                  <input placeholder="Parcel" value={parcel} onChange={(e) => setParcel(e.target.value)}
-                    className="px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-xs" />
-                  <input placeholder="Sheet" value={sheet} onChange={(e) => setSheet(e.target.value)}
-                    className="px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-xs" />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  <input placeholder="Block" value={blck} onChange={(e) => setBlck(e.target.value)} className={inputCls} />
+                  <input placeholder="Parcel" value={parcel} onChange={(e) => setParcel(e.target.value)} className={inputCls} />
+                  <input placeholder="Sheet" value={sheet} onChange={(e) => setSheet(e.target.value)} className={inputCls} />
                 </div>
               </>
             )}
             {mode === "plan" && (
-              <input placeholder="Plan number…" value={plan} onChange={(e) => setPlan(e.target.value)}
-                className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-foreground text-xs" />
+              <input placeholder="Plan number…" value={plan} onChange={(e) => setPlan(e.target.value)} className={inputCls} />
             )}
             {mode === "map" && (
-              <p className="text-muted-foreground text-center py-2">Click on the map to identify a parcel.</p>
+              <p style={{ fontSize: 12, color: "#7c6fa0", textAlign: "center", padding: "8px 0", margin: 0 }}>
+                Click anywhere on the map to identify a cadastral parcel.
+              </p>
             )}
 
             {mode !== "map" && (
-              <button onClick={doSearch} disabled={status.loading}
-                className="w-full py-1.5 bg-foreground text-background rounded text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1">
-                {status.loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+              <button onClick={doSearch} disabled={status.loading} style={{
+                width: "100%", padding: "10px",
+                background: "#6750a4", color: "#fff",
+                borderRadius: 24, border: "none",
+                fontSize: 13, fontWeight: 500,
+                cursor: status.loading ? "not-allowed" : "pointer",
+                opacity: status.loading ? 0.7 : 1,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                boxShadow: "0 1px 4px rgba(103,80,164,0.3)",
+                transition: "opacity 0.15s",
+                fontFamily: "Roboto, sans-serif",
+              }}>
+                {status.loading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <Search style={{ width: 14, height: 14 }} />}
                 Search
               </button>
             )}
 
-            {/* Status */}
-            <p className={`text-[10px] ${status.error ? "text-red-400" : "text-muted-foreground"}`}>
-              {status.loading && <Loader2 className="w-3 h-3 inline animate-spin mr-1" />}
+            <p style={{ fontSize: 11, color: status.error ? "#d32f2f" : "#9c8fba", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+              {status.loading && <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" />}
               {status.msg}
             </p>
 
-            {/* Results list */}
+            {/* Results list — MD3 list style */}
             {results.length > 1 && (
-              <div className="border border-border rounded max-h-32 overflow-y-auto">
+              <div style={{ border: "1px solid #ede8f5", borderRadius: 12, overflow: "hidden", maxHeight: 140, overflowY: "auto" }}>
                 {results.map((f, i) => {
                   const a = f.attributes;
                   return (
-                    <button key={i} onClick={() => selectResult(i)}
-                      className={`w-full text-left px-2 py-1 text-[10px] hover:bg-accent transition-colors border-b border-border last:border-0
-                        ${i === activeIdx ? "bg-accent font-medium" : ""}`}>
-                      D{a.DIST_CODE} V{a.VIL_CODE} Q{a.QRTR_CODE} B{a.BLCK_CODE} P{a.PARCEL_NBR}
+                    <button key={i} onClick={() => selectResult(i)} style={{
+                      width: "100%", textAlign: "left",
+                      padding: "8px 12px", fontSize: 11,
+                      background: i === activeIdx ? "#f0ebff" : "transparent",
+                      color: i === activeIdx ? "#6750a4" : "#1a1625",
+                      fontWeight: i === activeIdx ? 500 : 400,
+                      border: "none", borderBottom: "1px solid #ede8f5",
+                      cursor: "pointer", fontFamily: "Roboto, sans-serif",
+                      transition: "background 0.1s",
+                    }}>
+                      D{a.DIST_CODE} · V{a.VIL_CODE} · B{a.BLCK_CODE} · P{a.PARCEL_NBR}
                     </button>
                   );
                 })}
               </div>
             )}
 
-            {/* Detail view */}
+            {/* Detail card — MD3 surface variant */}
             {detailFor && (
-              <div className="border border-border rounded p-2 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-foreground">Parcel Detail</span>
-                  <button onClick={() => setDetailFor(null)} className="text-muted-foreground hover:text-foreground">
-                    <X className="w-3 h-3" />
+              <div style={{
+                background: "#f5f0ff", borderRadius: 16,
+                padding: 12, fontSize: 12,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontWeight: 600, color: "#1a1625", fontSize: 13 }}>Parcel Detail</span>
+                  <button onClick={() => setDetailFor(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7c6fa0" }}>
+                    <X style={{ width: 14, height: 14 }} />
                   </button>
                 </div>
-                <div className="space-y-0.5 text-[10px]">
-                  <div className="flex justify-between"><span className="text-muted-foreground">District</span><span>{DIST[a.DIST_CODE] || a.DIST_CODE}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Village</span><span>{a.VIL_CODE}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Quarter</span><span>{a.QRTR_CODE}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Block</span><span>{a.BLCK_CODE}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Parcel</span><span>{a.PARCEL_NBR}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Sheet</span><span>{a.SHEET || "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Plan</span><span>{a.PLAN_NBR || "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">SBPI ID</span><span>{a.SBPI_ID_NO || "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Source</span><span>{SRC[a.SRC_SL_CODE] || a.SRC_SL_CODE}</span></div>
-                  {a["SHAPE.STArea()"] && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">Area (m²)</span><span>{Number(a["SHAPE.STArea()"]).toFixed(1)}</span></div>
-                  )}
-                  {/* Extra keys */}
-                  {Object.entries(a).filter(([k]) => !KNOWN_KEYS.has(k)).map(([k, v]) => (
-                    <div key={k} className="flex justify-between"><span className="text-muted-foreground">{fmtLabel(k)}</span><span>{fmtValue(v)}</span></div>
-                  ))}
-                </div>
+                {[
+                  ["District", DIST[a.DIST_CODE] || a.DIST_CODE],
+                  ["Village Code", a.VIL_CODE],
+                  ["Quarter", a.QRTR_CODE],
+                  ["Block", a.BLCK_CODE],
+                  ["Parcel No", a.PARCEL_NBR],
+                  ["Sheet", a.SHEET || "—"],
+                  ["Plan No", a.PLAN_NBR || "—"],
+                  ["SBPI ID", a.SBPI_ID_NO || "—"],
+                  a["SHAPE.STArea()"] && ["Area (m²)", Number(a["SHAPE.STArea()"]).toFixed(1)],
+                ].filter(Boolean).map(([label, val]) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid #e8e0f5" }}>
+                    <span style={{ color: "#7c6fa0" }}>{label}</span>
+                    <span style={{ fontWeight: 500, color: "#1a1625" }}>{val}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
