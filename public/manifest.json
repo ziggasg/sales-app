@@ -1,6 +1,6 @@
 {
-  "name": "Property Pulse Map",
-  "short_name": "PropPulse",
+  "name": "Sales Map",
+  "short_name": "Sales Map",
   "description": "Cyprus property sales on an interactive map",
   "start_url": "/",
   "display": "standalone",
